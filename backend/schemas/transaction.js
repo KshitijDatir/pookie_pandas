@@ -29,8 +29,11 @@ const transactionSchemaTemplate = new Schema({
 }, { timestamps: true });
 
 // -------------------- Transaction Models for Each Bank --------------------
-const Bank1Transaction = mongoose.model('Bank1Transaction', transactionSchemaTemplate);
-const Bank2Transaction = mongoose.model('Bank2Transaction', transactionSchemaTemplate);
-const Bank3Transaction = mongoose.model('Bank3Transaction', transactionSchemaTemplate);
+const SBI_TXN = mongoose.model('SBI_TXN', transactionSchemaTemplate);
+const HDFC_TXN = mongoose.model('HDFC_TXN', transactionSchemaTemplate);
+const AXIS_TXN = mongoose.model('AXIS_TXN', transactionSchemaTemplate);
+const SBI_Q = mongoose.model('SBI_Q', transactionSchemaTemplate);
+const HDFC_Q = mongoose.model('HDFC_Q', transactionSchemaTemplate);
+const AXIS_Q = mongoose.model('AXIS_Q', transactionSchemaTemplate);
 
-module.exports = { Bank1Transaction, Bank2Transaction, Bank3Transaction };
+module.exports = {SBI_TXN, HDFC_TXN, AXIS_TXN,SBI_Q,HDFC_Q,AXIS_Q};
