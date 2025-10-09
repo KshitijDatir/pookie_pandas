@@ -4,11 +4,13 @@ const User = require('../schemas/user.js');
 const Bank = require('../schemas/bank.js');
 const { Bank1Transaction, Bank2Transaction, Bank3Transaction } = require('../schemas/transaction.js');
 
-function getTransactionModel(bankCode) {
-    switch(bankCode) {
-        case 'BANK1': return Bank1Transaction;
-        case 'BANK2': return Bank2Transaction;
-        case 'BANK3': return Bank3Transaction;
-        default: throw new Error('Invalid bank code');
-    }
-}
+// In routes/bank.js
+router.post('/banks', async (req, res) => {
+  try {
+    const bank = await Bank.create(req.body);
+    res.status(201).json({ message: "Bank created", bank });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+routes/Transaction.js

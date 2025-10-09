@@ -4,11 +4,9 @@ const User = require('../schemas/user.js');
 const Bank = require('../schemas/bank.js');
 const { Bank1Transaction, Bank2Transaction, Bank3Transaction } = require('../schemas/transaction.js');
 
-// routes/transactions.js
-
-
+// Helper function to pick correct transaction model
 function getTransactionModel(bankCode) {
-    switch(bankCode) {
+    switch (bankCode) {
         case 'BANK1': return Bank1Transaction;
         case 'BANK2': return Bank2Transaction;
         case 'BANK3': return Bank3Transaction;
@@ -16,23 +14,6 @@ function getTransactionModel(bankCode) {
     }
 }
 
-// ------------------- LOGIN -------------------
-router.post('/login', async (req, res) => {
-    const { userID, bankCode } = req.body;
-    try {
-        const bank = await Bank.findOne({ bankCode });
-        if (!bank) return res.status(400).json({ message: 'Bank not found' });
-
-        const user = await User.findOne({ userID, bankID: bank._id });
-        if (!user) return res.status(400).json({ message: 'User not found in this bank' });
-
-        res.json({ message: 'Login successful', user });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ------------------- MAKE TRANSACTION -------------------
 router.post('/transaction', async (req, res) => {
     const { senderUserID, senderBankCode, receiverUserID, receiverBankCode, amount, transaction_type } = req.body;
 
