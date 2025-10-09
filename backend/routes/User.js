@@ -9,14 +9,45 @@ router.post('/login', async (req, res) => {
     try {
         const bank = await Bank.findOne({ bankCode });
         if (!bank) return res.status(400).json({ message: 'Bank not found' });
-
-        const user = await User.findOne({ userID, bankID: bank._id });
+        console.log(bankCode);
+       
+        const user = await User.findOne({ userID, bankCode });
         if (!user) return res.status(400).json({ message: 'User not found in this bank' });
 
         res.json({ message: 'Login successful', user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+router.get('/getTransactions/:userID', async (req, res) => {
+  const { userID } = req.params;
+
+  try {
+    // Find the user first
+    const user = await User.findOne({ userID });
+    if (!user) return res.status(400).json({ message: 'User not found' });
+
+    let transactions;
+
+    // Fetch transactions depending on bankCode
+    switch (user.bankCode) {
+      case 'bank1':
+        transactions = await Bank1Transaction.find({ userID });
+        break;
+      case 'bank2':
+        transactions = await Bank2Transaction.find({ userID });
+        break;
+      case 'bank3':
+        transactions = await Bank3Transaction.find({ userID });
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid bankCode' });
+    }
+
+    res.json({ userID, bankCode: user.bankCode, transactions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // In routes/user.js
