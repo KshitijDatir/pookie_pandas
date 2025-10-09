@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const User = require("../schemas/user.js");
 const Bank = require("../schemas/bank.js");
-const { Bank1Transaction, Bank2Transaction, Bank3Transaction } = require("../schemas/transaction.js");
+const { Bank1Transaction, Bank2Transaction, Bank3Transaction } = require("../non_frauds_first500.json");
 
 const fraudsPath = path.join(__dirname, "../data/frauds.json");
 let fraudData = []; // cache for fraud data

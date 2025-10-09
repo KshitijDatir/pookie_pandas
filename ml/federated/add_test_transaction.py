@@ -28,10 +28,7 @@ def add_test_transaction(bank_id: str = "SBI", num_transactions: int = 1, fraud:
         client = MongoClient(mongo_config["connection_string"])
         db = client[mongo_config["database"]]
         
-        collection_name = mongo_config.get("collection_template", "trial")
-        if "{bank_id}" in collection_name:
-            collection_name = collection_name.format(bank_id=bank_id.lower())
-        
+        collection_name = mongo_config.get("collection_template", "sbi_qs")
         collection = db[collection_name]
         
         print(f"🔗 Connected to collection: {collection_name}")

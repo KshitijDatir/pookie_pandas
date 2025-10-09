@@ -55,23 +55,23 @@ BANK_CONFIGS = {
         "mongo_config": {
             "connection_string": "mongodb+srv://gurudesai2005_db_user:xz8BtHpTGmtm0XGc@cluster0.zntbebn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
             "database": "pookies",
-            "collection_template": "trial"  # Will become "sbi_transactions"
+            "collection_template": "sbi_qs"
         }
     },
     "HDFC": {
         "bank_id": "HDFC", 
         "mongo_config": {
-            "connection_string": "mongodb://localhost:27017/",
-            "database": "hdfc_banking_data",
-            "collection_template": "{bank_id}_transactions"
+            "connection_string": "mongodb+srv://gurudesai2005_db_user:xz8BtHpTGmtm0XGc@cluster0.zntbebn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+            "database": "pookies",
+            "collection_template": "hdfc_qs"
         }
     },
     "AXIS": {
         "bank_id": "AXIS",
         "mongo_config": {
-            "connection_string": "mongodb://localhost:27017/",
-            "database": "axis_banking_data", 
-            "collection_template": "{bank_id}_transactions"
+            "connection_string": "mongodb+srv://gurudesai2005_db_user:xz8BtHpTGmtm0XGc@cluster0.zntbebn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+            "database": "pookies",
+            "collection_template": "axis_qs"
         }
     }
 }
@@ -162,9 +162,9 @@ def get_bank_config(bank_id: str) -> dict:
         return {
             "bank_id": bank_id,
             "mongo_config": {
-                "connection_string": "mongodb://localhost:27017/",
-                "database": f"{bank_id.lower()}_banking_data",
-                "collection_template": "{bank_id}_transactions"
+                "connection_string": "mongodb+srv://gurudesai2005_db_user:xz8BtHpTGmtm0XGc@cluster0.zntbebn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+                "database": "pookies",
+                "collection_template": f"{bank_id.lower()}_qs"
             }
         }
 

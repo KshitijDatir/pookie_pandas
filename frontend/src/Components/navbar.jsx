@@ -24,40 +24,35 @@ const Navbar = () => {
                     </div>
 
                     {/* Navigation Links */}
-                    { (
-                        <div className="hidden md:flex items-center space-x-4">
-                            <NavLink
-                                to="/transaction"
-                                style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
-                                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
-                            >
-                                Make Transaction
-                            </NavLink>
-                            <NavLink
-                                to="/history"
-                                style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
-                                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
-                            >
-                                History
-                            </NavLink>
-                        </div>
-                    )}
+                    <div className="hidden md:flex items-center space-x-4">
+                        <NavLink
+                            to="/dashboard"
+                            style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
+                            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
+                        >
+                            Dashboard
+                        </NavLink>
+                        <NavLink
+                            to="/simulate"
+                            style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
+                            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
+                        >
+                            Simulate Transaction
+                        </NavLink>
+                    </div>
 
                     {/* User Info and Logout */}
-                    { (
-                        <div className="flex items-center space-x-4">
-                          
-                            <button
-                                onClick={() => {
-                                    localStorage.removeItem('token');
-                                    window.location.href = '/';
-                                }}
-                                className="px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem('token');
+                                window.location.href = '/';
+                            }}
+                            className="px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </nav>
         </header>
