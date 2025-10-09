@@ -13,4 +13,4 @@ router.post('/banks', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-routes/Transaction.js
+module.exports = router;

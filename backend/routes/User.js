@@ -35,9 +35,13 @@ router.post('/register', async (req, res) => {
       name,
       email,
       phone,
-      bankID: bank._id,
+      bankCode,
       balance: balance || 0
     });
+
+    // Add user to bank's users array
+    bank.users.push(user._id);
+    await bank.save();
 
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (err) {
