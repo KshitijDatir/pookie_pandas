@@ -1,0 +1,66 @@
+# Federated Learning for Banking Fraud Detection
+# Core Dependencies
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Federated Learning
+flwr>=1.21.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# Database
+pymongo>=4.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilities
+tqdm>=4.65.0
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# Logging
+loguru>=0.7.0
+
+# Development Tools (Optional)
+jupyter>=1.0.0
+notebook>=7.0.0
+ipykernel>=6.25.0
+
+# Testing (Optional)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Code Quality (Optional)
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Core Federated Learning with Flower
+flwr>=1.7.0
+pymongo>=4.0.0
+numpy>=1.21.0
+
+# Choose ONE ML Framework:
+
+# Option 1: PyTorch (recommended for flexibility)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Option 2: TensorFlow (uncomment if using TensorFlow instead)
+# tensorflow>=2.10.0
+# tensorflow-addons>=0.19.0
+
+# Optional: For enhanced logging and monitoring
+pyyaml>=6.0
+tqdm>=4.64.0
+
+# Optional: For advanced features
+scikit-learn>=1.2.0  # For preprocessing and metrics
+pandas>=1.5.0        # For data handling
