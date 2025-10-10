@@ -17,26 +17,45 @@ SERVER_CONFIG = {
     "round_timeout": 120,           # Timeout per round in seconds
 }
 
-# Model Configuration
+# Model Configuration - LightGBM (matches original training setup)
 MODEL_CONFIG = {
-    "input_dim": 15,                # Input features (auto-detected from base model)
-    "architecture": {
-        "encoder": [64, 32, 16, 8], # Encoder layer sizes
-        "decoder": [16, 32, 64],    # Decoder layer sizes (excluding output)
-    },
-    "learning_rate": 0.001,         # Adam optimizer learning rate
-    "batch_size": 128,              # Training batch size
-    "local_epochs": 5,              # Local training epochs per FL round
-    "dropout_rate": 0.2,            # Dropout for regularization
+    "model_type": "lightgbm",        # Model type: LightGBM tree-based classifier
+    "n_estimators": 200,            # Number of boosting rounds (as in original)
+    "learning_rate": 0.05,          # LightGBM learning rate (as in original)
+    "max_depth": 10,               # Maximum tree depth (as in original)
+    "num_leaves": 31,               # Maximum number of leaves in one tree (as in original)
+    "random_state": 42,             # Random seed for reproducibility (as in original)
+    "verbose": -1,                  # Suppress LightGBM output (as in original)
+    
+    # Additional LightGBM parameters for federated learning optimization
+    "min_child_samples": 20,        # Minimum number of data samples in a leaf
+    "subsample": 0.8,               # Subsample ratio of the training instance
+    "colsample_bytree": 0.8,        # Subsample ratio of columns when constructing each tree
+    "reg_alpha": 0.1,               # L1 regularization term
+    "reg_lambda": 0.1,              # L2 regularization term
+    "objective": "binary",          # Binary classification objective
+    "metric": "binary_logloss",     # Evaluation metric
+    "boosting_type": "gbdt",        # Gradient Boosting Decision Tree
+    "feature_fraction": 0.9,        # Feature fraction for training
+    "bagging_fraction": 0.8,        # Data fraction for training
+    "bagging_freq": 5,              # Frequency of bagging
+    
+    # Federated learning specific parameters
+    "federated_rounds": 50,         # Number of federated learning rounds
+    "local_training_rounds": 10,    # Reduced for federated setting
 }
 
-# Training Configuration
+# Training Configuration - LightGBM
 TRAINING_CONFIG = {
-    "max_epochs": 100,              # Maximum epochs for base model training
-    "patience": 15,                 # Early stopping patience
     "train_split": 0.8,            # Train/validation split ratio
-    "criterion": "MSELoss",         # Loss function
+    "apply_smote": True,            # Apply SMOTE for class balancing (as in original)
+    "smote_random_state": 42,      # SMOTE random state (as in original)
+    "stratify": True,               # Use stratified split (as in original)
+    "test_size": 0.2,              # Test size for train-test split (as in original)
+    "random_state": 42,            # Random state for reproducibility (as in original)
     "save_best": True,              # Save best model during training
+    "early_stopping_rounds": 100,   # Early stopping for LightGBM
+    "eval_metric": "binary_logloss" # Evaluation metric for early stopping
 }
 
 # Data Configuration
@@ -109,13 +128,16 @@ PREPROCESSING_CONFIG = {
     ]
 }
 
-# Fraud Detection Configuration
+# Fraud Detection Configuration - LightGBM Probability-based
 FRAUD_DETECTION_CONFIG = {
-    "default_threshold": 0.1,       # Default reconstruction error threshold
-    "adaptive_threshold": True,     # Use adaptive thresholding
+    "default_threshold": 0.5,       # Default probability threshold for fraud classification
+    "adaptive_threshold": True,     # Use adaptive thresholding based on data
     "threshold_percentile": 95,     # Percentile for adaptive threshold
-    "min_threshold": 0.01,         # Minimum threshold value
-    "max_threshold": 1.0,          # Maximum threshold value
+    "min_threshold": 0.1,          # Minimum threshold value (probability)
+    "max_threshold": 0.9,          # Maximum threshold value (probability)
+    "use_probability": True,        # Use probability predictions (not binary)
+    "confidence_threshold": 0.8,    # High confidence threshold for definitive fraud
+    "uncertainty_range": [0.4, 0.6] # Range for uncertain predictions requiring review
 }
 
 # Logging Configuration
@@ -135,14 +157,17 @@ SECURITY_CONFIG = {
     "client_auth": False,          # Require client authentication
 }
 
-# Paths Configuration
+# Paths Configuration - LightGBM Models
 PATHS_CONFIG = {
     "trained_models_dir": "trained_models",
     "logs_dir": "logs",
     "checkpoints_dir": "checkpoints",
     "results_dir": "results",
-    "base_model_name": "latest_base_model.pth",
-    "base_preprocessor_name": "latest_preprocessor.pkl",
+    "base_model_name": "lightgbm_model.pkl",           # Base LightGBM model (original)
+    "current_model_name": "latest_lightgbm_federated.pkl", # Current federated model
+    "base_preprocessor_name": "latest_preprocessor.pkl",    # Preprocessor for feature engineering
+    "versions_dir": "versions",                            # Directory for model versions
+    "metadata_file": "model_metadata.json"                 # Version metadata
 }
 
 def get_bank_config(bank_id: str) -> dict:

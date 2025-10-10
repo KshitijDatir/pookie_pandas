@@ -8,8 +8,11 @@ import {
     ExclamationCircleIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/solid';
+import { useToast } from '../Components/Toast.jsx';
 
 const TransactionSimulator = () => {
+    const { addToast } = useToast();
+    
     const [formData, setFormData] = useState({
         sender_account: '',
         receiver_account: '',
@@ -23,6 +26,7 @@ const TransactionSimulator = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [federatedMessage, setFederatedMessage] = useState('');
 
     // Predefined options based on your ML model requirements
     const transactionTypes = [
@@ -62,10 +66,11 @@ const TransactionSimulator = () => {
         }));
         
         // Clear messages when user starts typing
-        if (message || error) {
+        if (message || error || federatedMessage) {
             setMessage('');
             setError('');
             setSuccess(false);
+            setFederatedMessage('');
         }
     };
 
@@ -139,6 +144,14 @@ const TransactionSimulator = () => {
             setSuccess(true);
             setMessage(`Transaction simulated successfully! Transaction ID: ${response.data.transactionId}`);
             
+            // INSTANT MESSAGE: Sufficient Data Gathered
+            setFederatedMessage('Sufficient Data Gathered, Trigger Federated Model Updates');
+            
+            // TOAST AFTER 2 SECONDS: Model Update Complete
+            setTimeout(() => {
+                addToast('MODEL UPDATE COMPLETE', 'success', 4000);
+            }, 2000);
+            
             // Reset form after successful submission
             setTimeout(() => {
                 setFormData({
@@ -151,7 +164,8 @@ const TransactionSimulator = () => {
                 });
                 setSuccess(false);
                 setMessage('');
-            }, 3000);
+                setFederatedMessage('');
+            }, 6000); // Extended timeout to show federated message longer
             
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to simulate transaction. Please try again.');
@@ -173,6 +187,7 @@ const TransactionSimulator = () => {
         setMessage('');
         setError('');
         setSuccess(false);
+        setFederatedMessage('');
     };
 
     return (
@@ -363,6 +378,25 @@ const TransactionSimulator = () => {
                         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
                             <ExclamationCircleIcon className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
                             <p className="text-red-700">{error}</p>
+                        </div>
+                    )}
+
+                    {/* Federated Learning Message */}
+                    {federatedMessage && (
+                        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg flex items-center animate-pulse shadow-sm">
+                            <div className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <p className="text-blue-700 font-semibold tracking-wide">{federatedMessage}</p>
+                            <div className="ml-auto">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

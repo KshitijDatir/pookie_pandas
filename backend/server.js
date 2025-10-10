@@ -1,14 +1,28 @@
 // server.js
 const express = require('express');
+const cors = require('cors');
 const app = express();
 require('dotenv').config();
-const cors = require('cors');
 const PORT = process.env.PORT || 5000;
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/User.js');
 const bankRoutes = require('./routes/Bank.js');
 const transactionRoutes = require('./routes/Transaction.js');
 app.use(cors());
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Middleware to parse JSON requests
 app.use(express.json());
 app.use('/api/user', userRoutes);

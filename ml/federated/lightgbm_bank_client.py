@@ -45,13 +45,13 @@ class LightGBMBankClient(fl.client.NumPyClient):
         self.mongo_config = mongo_config
         self.logger = self._setup_logging()
         
-        # LightGBM model and preprocessor
+        # LightGBM model and preprocessor (MATCHES original training parameters)
         self.model = FederatedLightGBM(
-            n_estimators=50,  # Reduced for faster federated rounds
-            learning_rate=0.1,
-            max_depth=6,
-            num_leaves=31,
-            random_state=42
+            n_estimators=200,  # FIXED: Match original training (was 50)
+            learning_rate=0.05,  # FIXED: Match original training (was 0.1)
+            max_depth=10,     # FIXED: Match original training (was 6)
+            num_leaves=31,    # Correct: matches original
+            random_state=42   # Correct: matches original
         )
         self.preprocessor = LightGBMPreprocessor()
         
@@ -401,20 +401,27 @@ class LightGBMBankClient(fl.client.NumPyClient):
         # Set received parameters
         self.set_parameters(parameters)
         
-        # Real-time data count check - STRICT enforcement
-        current_count = self.get_available_data_count()
+        # ATOMIC threshold check and data collection to prevent race conditions
+        self.logger.info(f"🔍 ATOMIC THRESHOLD CHECK: {self.bank_id} checking data...")
         
-        # STRICT threshold check: must have EXACTLY 5 or more transactions
-        if current_count < 5:  # Hardcoded to ensure strict enforcement
-            self.logger.warning(f"❌ Insufficient data: {current_count} < 5 transactions required")
-            return self.get_parameters(config), 0, {"status": "insufficient_data", "data_count": current_count, "required": 5}
-        
-        self.logger.info(f"✅ Threshold passed: {current_count} transactions - proceeding with FL")
-        
-        # Collect and train
+        # Collect data first, then check the count atomically
         df, num_samples, transaction_ids = self.collect_training_data()
         
+        # Enhanced debug logging with actual collected samples
+        self.logger.info(f"🔍 COLLECTED: {num_samples} samples for {self.bank_id} (threshold: 5)")
+        
+        # STRICT threshold check: must have EXACTLY 5 or more samples COLLECTED
+        if num_samples < 5:  # Check actual collected samples, not just count
+            self.logger.warning(f"❌ INSUFFICIENT DATA: {self.bank_id} blocked with {num_samples} < 5 transactions")
+            self.logger.warning(f"❌ RETURNING: num_examples=0, status='insufficient_data'")
+            # Don't delete data since we didn't train
+            return self.get_parameters(config), 0, {"status": "insufficient_data", "data_count": num_samples, "required": 5}
+        
+        self.logger.info(f"✅ Threshold passed: {num_samples} samples collected - proceeding with FL")
+        
+        # Additional safety check (should not be needed with atomic collection)
         if num_samples == 0 or df.empty:
+            self.logger.error(f"BUG: Collected 0 samples after threshold check passed - this shouldn't happen")
             return self.get_parameters(config), 0, {"status": "no_data"}
         
         try:

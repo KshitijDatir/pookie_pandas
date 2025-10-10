@@ -1,39 +1,55 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const transactionSchemaTemplate = new Schema({
-    senderUserID: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    receiverUserID: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // Optional legacy fields for existing transactions
+    senderUserID: { type: Schema.Types.ObjectId, ref: 'User' },
+    receiverUserID: { type: Schema.Types.ObjectId, ref: 'User' },
 
-    // Numerical columns
+    // Core transaction fields
+    sender_account: { type: String, required: true },
+    receiver_account: { type: String, required: true },
     amount: { type: Number, required: true },
+    transaction_type: { type: String, required: true },
+    merchant_category: { type: String, required: true },
+    
+    // Auto-generated ML fields
+    transaction_id: { type: String, unique: true },
+    timestamp: { type: Date, default: Date.now },
+    ip_address: { type: String },
+    device_hash: { type: String },
+    location_lat: { type: Number },
+    location_long: { type: Number },
     time_since_last_transaction: { type: Number, default: 0 },
     spending_deviation_score: { type: Number, default: 0 },
     velocity_score: { type: Number, default: 0 },
     geo_anomaly_score: { type: Number, default: 0 },
-
-    // Categorical columns
-    transaction_type: { type: String, enum: ['debit', 'credit', 'transfer'], required: true },
-    merchant_category: { type: String },
+    user_id: { type: String },
+    merchant_id: { type: String },
+    account_age_days: { type: Number },
+    transaction_hour: { type: Number },
+    day_of_week: { type: Number },
+    is_weekend: { type: Boolean },
+    num_transactions_today: { type: Number },
+    avg_transaction_amount: { type: Number },
+    processed_for_fl: { type: Boolean, default: false },
+    is_fraud: { type: Number, default: null },
+    
+    // Legacy fields for backward compatibility
     location: { type: String },
     device_used: { type: String },
     payment_channel: { type: String },
-
-    // Hashed / sensitive columns
-    sender_account: { type: String, required: true },
-    receiver_account: { type: String, required: true },
-    ip_address: { type: String },
-    device_hash: { type: String },
-
-    // Fraud field
-    fraud: { type: Boolean, default: null },  // initially unknown
+    fraud: { type: Boolean, default: null }
 }, { timestamps: true });
 
 // -------------------- Transaction Models for Each Bank --------------------
-const SBI_TXN = mongoose.model('SBI_TXN', transactionSchemaTemplate);
-const HDFC_TXN = mongoose.model('HDFC_TXN', transactionSchemaTemplate);
-const AXIS_TXN = mongoose.model('AXIS_TXN', transactionSchemaTemplate);
-const SBI_Q = mongoose.model('SBI_Q', transactionSchemaTemplate);
-const HDFC_Q = mongoose.model('HDFC_Q', transactionSchemaTemplate);
-const AXIS_Q = mongoose.model('AXIS_Q', transactionSchemaTemplate);
+// TXN collections for user input transactions
+const SBI_TXN = mongoose.model('sbi_txn', transactionSchemaTemplate, 'sbi_txns');
+const HDFC_TXN = mongoose.model('hdfc_txn', transactionSchemaTemplate, 'hdfc_txns');
+const AXIS_TXN = mongoose.model('axis_txn', transactionSchemaTemplate, 'axis_txns');
+
+// Q collections for federated learning processed data  
+const SBI_Q = mongoose.model('sbi_q', transactionSchemaTemplate, 'sbi_qs');
+const HDFC_Q = mongoose.model('hdfc_q', transactionSchemaTemplate, 'hdfc_qs');
+const AXIS_Q = mongoose.model('axis_q', transactionSchemaTemplate, 'axis_qs');
 
 module.exports = {SBI_TXN, HDFC_TXN, AXIS_TXN,SBI_Q,HDFC_Q,AXIS_Q};

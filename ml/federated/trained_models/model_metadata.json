@@ -1,0 +1,30 @@
+{
+  "versions": [
+    {
+      "version": "v_20251010_062432",
+      "timestamp": "20251010_062432",
+      "description": "Auto backup before original restoration",
+      "file_path": "trained_models\\versions\\v_20251010_062432_lightgbm_federated.pkl",
+      "model_info": {
+        "file_size_bytes": 3513,
+        "file_size_kb": 3.43,
+        "last_modified": "2025-10-10 03:51:30",
+        "model_type": "dict"
+      }
+    },
+    {
+      "version": "v_20251010_065014",
+      "timestamp": "20251010_065014",
+      "description": "Auto backup before original restoration",
+      "file_path": "trained_models\\versions\\v_20251010_065014_lightgbm_federated.pkl",
+      "model_info": {
+        "file_size_bytes": 3493,
+        "file_size_kb": 3.41,
+        "last_modified": "2025-10-10 06:42:43",
+        "model_type": "dict"
+      }
+    }
+  ],
+  "current_version": "original_restored",
+  "original_backup": null
+}

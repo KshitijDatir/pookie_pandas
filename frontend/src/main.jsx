@@ -7,18 +7,21 @@ import User from "./Pages/user.jsx";
 import TransactionSimulator from "./Pages/TransactionSimulator.jsx";
 import "./index.css";
 import Navbar from "./Components/navbar.jsx";
+import { ToastProvider } from "./Components/Toast.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-       <Navbar/>
-      <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/user/:userID" element={<User />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/simulate" element={<TransactionSimulator />} />
-      </Routes>
-    
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+         <Navbar/>
+        <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/user/:userID" element={<User />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/simulate" element={<TransactionSimulator />} />
+        </Routes>
+      
+      </BrowserRouter>
+    </ToastProvider>
   </React.StrictMode>
 );

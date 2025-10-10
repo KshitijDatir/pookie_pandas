@@ -8,6 +8,7 @@ with optimized aggregation strategies for tree-based models.
 import os
 import sys
 import logging
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 import flwr as fl
 from flwr.server.strategy import FedAvg
@@ -67,11 +68,12 @@ class LightGBMFederatedStrategy(FedAvg):
                     model_data = pickle.load(f)
                 
                 if isinstance(model_data, dict):
-                    # Load our FederatedLightGBM format
+                    # Load our FederatedLightGBM format with parameters
                     base_model = FederatedLightGBM()
                     base_model.params = model_data.get('params', base_model.params)
                     base_model.feature_names = model_data.get('feature_names', [])
                     base_model.n_features = model_data.get('n_features', 0)
+                    base_model.total_samples = model_data.get('total_samples', 4000000)  # Default to 4M
                     
                     # Create LightGBM model
                     if 'model_dump' in model_data:
@@ -79,18 +81,30 @@ class LightGBMFederatedStrategy(FedAvg):
                         booster = lgb.Booster(model_str=model_data['model_dump'])
                         base_model.model._Booster = booster
                         base_model.is_fitted = True
+                        
+                        self.logger.info(f"✅ Loaded base model: {booster.num_trees()} trees, {base_model.total_samples:,} samples")
                     
                     return base_model
                 else:
-                    # Handle sklearn LGBMClassifier directly
+                    # Handle sklearn LGBMClassifier directly (production scenario)
                     base_model = FederatedLightGBM()
                     base_model.model = model_data
                     base_model.is_fitted = True
+                    base_model.total_samples = 4000000  # Production: 4M samples
                     
                     # Extract feature information if available
                     if hasattr(model_data, 'feature_name_'):
                         base_model.feature_names = list(model_data.feature_name_)
                         base_model.n_features = len(base_model.feature_names)
+                    elif hasattr(model_data, 'n_features_'):
+                        base_model.n_features = model_data.n_features_
+                    
+                    # Get tree count for logging
+                    tree_count = getattr(model_data, 'n_estimators', 'unknown')
+                    if hasattr(model_data, 'booster_') and model_data.booster_:
+                        tree_count = model_data.booster_.num_trees()
+                    
+                    self.logger.info(f"✅ Loaded sklearn base model: {tree_count} trees, 4M samples")
                     
                     return base_model
             
@@ -113,13 +127,36 @@ class LightGBMFederatedStrategy(FedAvg):
         if self.base_model and self.base_model.is_fitted:
             model_params = self.base_model.get_model_params()
             if model_params:
-                # Convert to Flower parameters format
-                model_dump = model_params.get('model_dump', '')
-                if model_dump:
-                    model_bytes = model_dump.encode('utf-8')
-                    param_array = np.frombuffer(model_bytes, dtype=np.uint8).astype(np.float32)
-                    return fl.common.ndarrays_to_parameters([param_array])
+                # CRITICAL FIX: Send FULL model parameters, not just model_dump
+                # This ensures total_samples and other metadata are preserved
+                try:
+                    import json
+                    # Serialize the COMPLETE model state as JSON
+                    json_str = json.dumps(model_params, default=str)
+                    model_bytes = json_str.encode('utf-8')
+                    
+                    # Convert to float32 array for Flower
+                    byte_array = np.frombuffer(model_bytes, dtype=np.uint8)
+                    param_array = byte_array.astype(np.float32)
+                    
+                    # Store for later use in aggregation
+                    self.current_global_model = fl.common.ndarrays_to_parameters([param_array])
+                    
+                    self.logger.info(f"✅ Initialized with full model: {model_params.get('num_trees', 0)} trees, "
+                                   f"{model_params.get('total_samples', 0):,} samples")
+                    
+                    return self.current_global_model
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to serialize full model parameters: {e}")
+                    # Fallback to model_dump only
+                    model_dump = model_params.get('model_dump', '')
+                    if model_dump:
+                        model_bytes = model_dump.encode('utf-8')
+                        param_array = np.frombuffer(model_bytes, dtype=np.uint8).astype(np.float32)
+                        return fl.common.ndarrays_to_parameters([param_array])
         
+        self.logger.warning("⚠️ No base model available - initializing with empty parameters")
         # Return empty parameters if no base model
         return fl.common.ndarrays_to_parameters([np.array([0.0], dtype=np.float32)])
     
@@ -143,14 +180,22 @@ class LightGBMFederatedStrategy(FedAvg):
         for result in results:
             if isinstance(result, tuple) and len(result) == 2:
                 client_proxy, fit_res = result
+                # Enhanced debug logging for each client result
+                client_id = getattr(client_proxy, 'cid', 'Unknown') if hasattr(client_proxy, 'cid') else 'Unknown'
+                status = fit_res.metrics.get('status', 'no_status') if hasattr(fit_res, 'metrics') and fit_res.metrics else 'no_metrics'
+                data_count = fit_res.metrics.get('data_count', 'unknown') if hasattr(fit_res, 'metrics') and fit_res.metrics else 'unknown'
+                
+                self.logger.info(f"🔍 SERVER DEBUG: Client {client_id} -> num_examples={fit_res.num_examples}, status='{status}', data_count={data_count}")
+                
                 # Check if client had insufficient data
                 if (hasattr(fit_res, 'metrics') and 
                     fit_res.metrics and 
                     fit_res.metrics.get('status') == 'insufficient_data'):
                     insufficient_data_clients += 1
-                    self.logger.info(f"[FAIL] Client {client_proxy.cid if hasattr(client_proxy, 'cid') else 'Unknown'}: Insufficient data ({fit_res.metrics.get('data_count', 0)} < 5 transactions)")
+                    self.logger.info(f"[FAIL] Client {client_id}: Insufficient data ({data_count} < 5 transactions) - BLOCKED")
                 else:
                     fit_results.append(fit_res)
+                    self.logger.info(f"[ACCEPT] Client {client_id}: Sufficient data - ACCEPTED for aggregation")
             else:
                 fit_results.append(result)
         
@@ -240,7 +285,44 @@ class LightGBMFederatedStrategy(FedAvg):
             
             if model_params_list:
                 from models.lightgbm_model import aggregate_lightgbm_models
-                aggregated_params = aggregate_lightgbm_models(model_params_list, weights)
+                
+                # Get current global model parameters for preservation-based aggregation
+                current_global_params = None
+                
+                # Ensure we have global model parameters (initialize if not set)
+                if not self.current_global_model:
+                    self.logger.warning("⚠️ Global model not initialized, initializing now...")
+                    self.initialize_parameters(None)
+                
+                if self.current_global_model:
+                    try:
+                        self.logger.info(f"🔍 DEBUG: Attempting to decode global model for aggregation...")
+                        # Decode current global model to pass to aggregation
+                        param_arrays = fl.common.parameters_to_ndarrays(self.current_global_model)
+                        self.logger.info(f"🔍 DEBUG: Decoded {len(param_arrays)} parameter arrays")
+                        
+                        if len(param_arrays) > 0 and len(param_arrays[0]) > 1:
+                            byte_array = param_arrays[0].astype(np.uint8)
+                            model_bytes = byte_array.tobytes()
+                            json_str = model_bytes.decode('utf-8', errors='ignore')
+                            self.logger.info(f"🔍 DEBUG: Decoded JSON string length: {len(json_str)}")
+                            
+                            if json_str and len(json_str) > 10:
+                                import json
+                                current_global_params = json.loads(json_str)
+                                samples = current_global_params.get('total_samples', 0)
+                                trees = current_global_params.get('num_trees', 0)
+                                self.logger.info(f"🌍 SUCCESS: Using global model as base: {trees} trees, {samples:,} samples")
+                            else:
+                                self.logger.warning(f"⚠️ Global model JSON too short: {len(json_str)} chars")
+                        else:
+                            self.logger.warning(f"⚠️ Invalid parameter arrays: {len(param_arrays)} arrays")
+                    except Exception as e:
+                        self.logger.error(f"⚠️ Could not decode global model: {e}")
+                        import traceback
+                        self.logger.error(traceback.format_exc())
+                
+                aggregated_params = aggregate_lightgbm_models(model_params_list, weights, current_global_params)
                 self.logger.info(f"DEBUG: Aggregation result: {'Success' if aggregated_params else 'Failed'}")
                 
                 if aggregated_params:
@@ -369,20 +451,57 @@ class LightGBMFederatedStrategy(FedAvg):
             return 1.0, {"eval_error": str(e)}
     
     def save_global_model(self, model_params: Dict, save_path: str, round_num: int):
-        """Save the global model to file."""
+        """Save the global model to file with automatic versioning."""
         try:
+            # Create version backup before updating model
+            self._create_model_version_backup(save_path, round_num)
+            
             model_data = {
                 'model_dump': model_params.get('model_dump', ''),
                 'round': round_num,
                 'total_samples': model_params.get('total_samples', 0),
-                'last_updated': round_num
+                'last_updated': round_num,
+                'version_info': {
+                    'created_at': datetime.now().isoformat(),
+                    'federated_round': round_num,
+                    'model_type': 'lightgbm_federated'
+                }
             }
             
+            # Save new model
             with open(save_path, 'wb') as f:
                 pickle.dump(model_data, f)
                 
+            # Get file size for logging
+            file_size = os.path.getsize(save_path)
+            self.logger.info(f"✅ Model saved (Round {round_num}): {file_size/1024:.2f} KB")
+                
         except Exception as e:
             self.logger.error(f"Failed to save global model: {e}")
+    
+    def _create_model_version_backup(self, model_path: str, round_num: int):
+        """Create a versioned backup of the current model before updating."""
+        try:
+            if os.path.exists(model_path):
+                # Create versions directory
+                versions_dir = os.path.join(os.path.dirname(model_path), "versions")
+                os.makedirs(versions_dir, exist_ok=True)
+                
+                # Create backup with timestamp and round info
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_name = f"backup_r{round_num}_{timestamp}_lightgbm_federated.pkl"
+                backup_path = os.path.join(versions_dir, backup_name)
+                
+                # Copy current model to backup
+                import shutil
+                shutil.copy2(model_path, backup_path)
+                
+                # Get file sizes for comparison
+                original_size = os.path.getsize(model_path)
+                self.logger.info(f"📦 Model backed up: Round {round_num} ({original_size/1024:.2f} KB)")
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to create model backup: {e}")
 
 def load_base_lightgbm_model(trained_models_dir: str):
     """Find and load the base LightGBM model."""

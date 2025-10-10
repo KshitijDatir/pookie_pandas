@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../schemas/user.js');
 const Bank = require('../schemas/bank.js');
-const { Bank1Transaction, Bank2Transaction, Bank3Transaction } = require('../schemas/transaction.js');
+const { SBI_Q, HDFC_Q, AXIS_Q } = require('../schemas/transaction.js');
 
 router.post('/login', async (req, res) => {
     const { userID, bankCode } = req.body;
@@ -30,15 +30,18 @@ router.get('/getTransactions/:userID', async (req, res) => {
     let transactions;
 
     // Fetch transactions depending on bankCode
-    switch (user.bankCode) {
-      case 'bank1':
-        transactions = await Bank1Transaction.find({ userID });
+    switch (user.bankCode.toUpperCase()) {
+      case 'SBI':
+      case 'BANK1':
+        transactions = await SBI_Q.find({ userID });
         break;
-      case 'bank2':
-        transactions = await Bank2Transaction.find({ userID });
+      case 'HDFC':
+      case 'BANK2':
+        transactions = await HDFC_Q.find({ userID });
         break;
-      case 'bank3':
-        transactions = await Bank3Transaction.find({ userID });
+      case 'AXIS':
+      case 'BANK3':
+        transactions = await AXIS_Q.find({ userID });
         break;
       default:
         return res.status(400).json({ message: 'Invalid bankCode' });
