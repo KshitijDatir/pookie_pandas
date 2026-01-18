@@ -179,11 +179,7 @@ patience = 15
 
 ---
 
-## 📜 License
 
-MIT License
-
----
 
 ## 🙌 Acknowledgements
 
