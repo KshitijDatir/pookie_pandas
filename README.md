@@ -152,7 +152,7 @@ Else:
 Federated Server  
 num_rounds = 10  
 min_clients = 2  
-server_address = [::]:8080  
+
 
 Base Training  
 epochs = 100  
